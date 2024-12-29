@@ -9,6 +9,7 @@ Create a file named `jump_tunnel_colors.ini` in `DATA/FX`. To this new file, add
 ```ini
 [DefaultTunnel]
 color = 255, 200, 100
+switch_colors_while_jumping = true
 
 [Tunnel]
 color = 50, 255, 95

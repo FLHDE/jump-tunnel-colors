@@ -5,6 +5,7 @@
 
 UINT gateTunnelBretoniaId;
 DWORD systemSwitchOutOg;
+bool switchColorsWhileJumping = true;
 
 FlColor defaultTunnel = DEFAULT_FL_COLOR;
 std::map<UINT, FlColor> tunnelMap;
@@ -14,8 +15,13 @@ void UpdateGateTunnel(UINT systemId)
     static UINT lastSystemId = NULL;
 
     // If the system hasn't changed, then there's no point in changing the color.
-    // Also if the gate tunnel cannot be found, FL will generate a Spew warning.
-    if (systemId == lastSystemId || GATE_TUNNELS_VECTOR_PTR->empty())
+    if (systemId == lastSystemId)
+        return;
+
+    GateTunnel* gateTunnel = GetGateTunnel(&gateTunnelBretoniaId);
+
+    // Also if the gate tunnel cannot be found, its color can't be changed either.
+    if (!gateTunnel)
         return;
 
     lastSystemId = systemId;
@@ -28,11 +34,8 @@ void UpdateGateTunnel(UINT systemId)
     if (it != tunnelMap.end())
         systemTunnel = &it->second;
 
-    GateTunnel* gateTunnel = GetGateTunnel(&gateTunnelBretoniaId);
-
     // Set the color.
-    if (gateTunnel)
-        gateTunnel->jumptube5Color = *systemTunnel;
+    gateTunnel->jumptube5Color = *systemTunnel;
 }
 
 // This hook gets called each time FL changes the current system.
@@ -69,6 +72,11 @@ void ParseTunnelColors()
         {
             while (reader.read_value())
             {
+                if (reader.is_value("switch_colors_while_jumping"))
+                {
+                    switchColorsWhileJumping = reader.get_value_bool(0);
+                }
+
                 if (reader.is_value("color"))
                 {
                     defaultTunnel.r = ByteColorToFloat(reader.get_value_int(0));
@@ -103,17 +111,20 @@ void ParseTunnelColors()
 
 void Init()
 {
-    #define UPDATE_SYS_GETSYS_CALL_ADDR_1 0x4C484F
-    #define UPDATE_SYS_GETSYS_CALL_ADDR_2 0x4C4943
+    #define UPDATE_SYS_GETSYS_CALL_ADDR 0x4C484F
     #define SYSTEM_SWITCH_OUT_ADDR 0x5E6758
 
     gateTunnelBretoniaId = CreateID("gate_tunnel_bretonia");
 
-    Hook(UPDATE_SYS_GETSYS_CALL_ADDR_1, get_system_Hook, 6);
-    //Hook(UPDATE_SYS_GETSYS_CALL_ADDR_2, get_system_Hook, 6);
-    systemSwitchOutOg = SetPointer(SYSTEM_SWITCH_OUT_ADDR, &Client::SystemSwitchOut_Hook);
+    // Allows us to prevent the spew warning from occurring when the gate tunnel cannot be found.
+    DWORD _;
+    VirtualProtect((PVOID) GET_GATE_TUNNEL_NOT_FOUND, sizeof(WORD), PAGE_EXECUTE_READWRITE, &_);
 
     ParseTunnelColors();
+
+    if (switchColorsWhileJumping)
+        Hook(UPDATE_SYS_GETSYS_CALL_ADDR, get_system_Hook, 6);
+    systemSwitchOutOg = SetPointer(SYSTEM_SWITCH_OUT_ADDR, &Client::SystemSwitchOut_Hook);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)

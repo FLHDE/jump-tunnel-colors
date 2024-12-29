@@ -1,7 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "vftable.h"
-#include <list>
 
 inline float ByteColorToFloat(BYTE byte)
 {
@@ -25,12 +24,24 @@ struct GateTunnel
     FlColor jumptube5Color;
 };
 
+#define DEFAULT_FL_COLOR FlColor(100, 200, 255)
+#define CURRENT_SYSTEM_ID *((PUINT) 0x673354)
+#define GET_GATE_TUNNEL_NOT_FOUND 0x04FEDF6
+
 inline GateTunnel* GetGateTunnel(PUINT jumpTunnelId)
 {
+    // FL generates a spew warning if the gate tunnel cannot be found, but in some cases this is inevitable for the current code setup.
+    // Hence patch out the warning temporarily
+    *((PWORD) GET_GATE_TUNNEL_NOT_FOUND) = 0x24EB;
+
     #define GET_GATE_TUNNEL_ADDR 0x4FEDD0
 
     typedef GateTunnel* GetGateTunnelFunc(PUINT);
-    return ((GetGateTunnelFunc*) GET_GATE_TUNNEL_ADDR)(jumpTunnelId);
+    GateTunnel* result = ((GetGateTunnelFunc*) GET_GATE_TUNNEL_ADDR)(jumpTunnelId);
+
+    *((PWORD) GET_GATE_TUNNEL_NOT_FOUND) = 0x02BE;
+
+    return result;
 }
 
 struct Client
@@ -40,7 +51,3 @@ struct Client
 private:
     typedef void (Client::*SystemSwitchOut)(DWORD unk1, DWORD unk2);
 };
-
-#define DEFAULT_FL_COLOR FlColor(100, 200, 255)
-#define CURRENT_SYSTEM_ID *((PUINT) 0x673354)
-#define GATE_TUNNELS_VECTOR_PTR ((std::list<GateTunnel>*) 0x674F9C)
