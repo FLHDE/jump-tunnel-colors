@@ -1,4 +1,4 @@
-# jump-tunnel-colors
+# Jump Tunnel Colors
 Allows the jump tunnel colors to be modified per-system for the game Freelancer.
 
 ## Installation instructions
