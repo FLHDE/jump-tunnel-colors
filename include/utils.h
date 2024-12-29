@@ -50,3 +50,21 @@ void Hook(DWORD location, Func hookFunc, UINT instrLen, bool jmp = false)
     if (instrLen > 5)
         Nop((location + 5), instrLen - 5);
 }
+
+template <typename Func>
+DWORD SetPointer(DWORD location, Func hookFunc)
+{
+    DWORD _;
+
+    VirtualProtect((PVOID) location, sizeof(DWORD), PAGE_EXECUTE_READWRITE, &_);
+    DWORD originalPtr = *(PDWORD) location;
+
+    *(Func*) location = hookFunc;
+    return originalPtr;
+}
+
+template <class Func>
+Func inline GetFuncDef(DWORD funcAddr)
+{
+    return *(Func*) &funcAddr;
+}

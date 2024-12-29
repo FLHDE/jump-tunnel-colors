@@ -44,4 +44,4 @@ $(BIN_DIR):
 clean:
     del $(BIN_DIR)\*.dll $(OBJ_DIR)\*.obj $(OBJ_DIR)\*.RES $(OBJ_DIR)\*.lib
 
-obj\main.obj: src\main.cpp include\Common.h include\utils.h
+obj\main.obj: src\main.cpp include\Common.h include\Freelancer.h include\utils.h include\vftable.h

@@ -4,37 +4,54 @@
 #include <map>
 
 UINT gateTunnelBretoniaId;
+DWORD systemSwitchOutOg;
 
 FlColor defaultTunnel = DEFAULT_FL_COLOR;
 std::map<UINT, FlColor> tunnelMap;
 
-// This hook gets called each time FL changes the current system.
-Universe::ISystem const * get_system_Hook(UINT systemId)
+void UpdateGateTunnel(UINT systemId)
 {
     static UINT lastSystemId = NULL;
 
     // If the system hasn't changed, then there's no point in changing the color.
-    if (systemId != lastSystemId)
-    {
-        lastSystemId = systemId;
-        FlColor* systemTunnel = &defaultTunnel;
+    // Also if the gate tunnel cannot be found, FL will generate a Spew warning.
+    if (systemId == lastSystemId || GATE_TUNNELS_VECTOR_PTR->empty())
+        return;
 
-        std::map<UINT, FlColor>::iterator it = tunnelMap.find(systemId);
+    lastSystemId = systemId;
+    FlColor* systemTunnel = &defaultTunnel;
 
-        // Try to find the tunnel color associated with this system.
-        // If it can't be found, use the default color.
-        if (it != tunnelMap.end())
-            systemTunnel = &it->second;
+    std::map<UINT, FlColor>::iterator it = tunnelMap.find(systemId);
 
-        GateTunnel* gateTunnel = GetGateTunnel(&gateTunnelBretoniaId);
+    // Try to find the tunnel color associated with this system.
+    // If it can't be found, use the default color.
+    if (it != tunnelMap.end())
+        systemTunnel = &it->second;
 
-        // Set the color.
-        if (gateTunnel)
-            gateTunnel->jumptube5Color = *systemTunnel;
-    }
+    GateTunnel* gateTunnel = GetGateTunnel(&gateTunnelBretoniaId);
 
-    // Call the original function
+    // Set the color.
+    if (gateTunnel)
+        gateTunnel->jumptube5Color = *systemTunnel;
+}
+
+// This hook gets called each time FL changes the current system.
+Universe::ISystem const * get_system_Hook(UINT systemId)
+{
+    UpdateGateTunnel(systemId);
+
+    // Call the original function.
     return Universe::get_system(systemId);
+}
+
+// This hook gets called each time a player jumps to a different system using a jumpgate or jumphole.
+void Client::SystemSwitchOut_Hook(DWORD unk1, DWORD unk2)
+{
+    UpdateGateTunnel(CURRENT_SYSTEM_ID);
+
+    // Call the original function.
+    SystemSwitchOut initElementsFunc = GetFuncDef<SystemSwitchOut>(systemSwitchOutOg);
+    (this->*initElementsFunc)(unk1, unk2);
 }
 
 void ParseTunnelColors()
@@ -88,11 +105,13 @@ void Init()
 {
     #define UPDATE_SYS_GETSYS_CALL_ADDR_1 0x4C484F
     #define UPDATE_SYS_GETSYS_CALL_ADDR_2 0x4C4943
+    #define SYSTEM_SWITCH_OUT_ADDR 0x5E6758
 
     gateTunnelBretoniaId = CreateID("gate_tunnel_bretonia");
 
     Hook(UPDATE_SYS_GETSYS_CALL_ADDR_1, get_system_Hook, 6);
-    Hook(UPDATE_SYS_GETSYS_CALL_ADDR_2, get_system_Hook, 6);
+    //Hook(UPDATE_SYS_GETSYS_CALL_ADDR_2, get_system_Hook, 6);
+    systemSwitchOutOg = SetPointer(SYSTEM_SWITCH_OUT_ADDR, &Client::SystemSwitchOut_Hook);
 
     ParseTunnelColors();
 }

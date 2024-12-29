@@ -1,5 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include "vftable.h"
+#include <list>
 
 inline float ByteColorToFloat(BYTE byte)
 {
@@ -31,4 +33,14 @@ inline GateTunnel* GetGateTunnel(PUINT jumpTunnelId)
     return ((GetGateTunnelFunc*) GET_GATE_TUNNEL_ADDR)(jumpTunnelId);
 }
 
+struct Client
+{
+    void SystemSwitchOut_Hook(DWORD unk1, DWORD unk2);
+
+private:
+    typedef void (Client::*SystemSwitchOut)(DWORD unk1, DWORD unk2);
+};
+
 #define DEFAULT_FL_COLOR FlColor(100, 200, 255)
+#define CURRENT_SYSTEM_ID *((PUINT) 0x673354)
+#define GATE_TUNNELS_VECTOR_PTR ((std::list<GateTunnel>*) 0x674F9C)

@@ -8,12 +8,13 @@ Download the latest `JumpTunnelColors.dll` from [Releases](https://github.com/FL
 Create a file named `jump_tunnel_colors.ini` in `DATA/FX`. To this new file, add content with the following format:
 ```ini
 [DefaultTunnel]
-color = 100, 200, 255
+color = 255, 200, 100
 
 [Tunnel]
 color = 50, 255, 95
 system = Li01
 system = Li03
+system = Ku01
 
 [Tunnel]
 color = 255, 30, 80
