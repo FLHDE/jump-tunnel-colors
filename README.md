@@ -26,6 +26,6 @@ system = Iw03
 The `color` keys represent the red, green, and blue values ranging from 0 to 255 (integers). For every `[Tunnel]` entry, you can specify one or more systems by nickname. If you are in a jump tunnel within a system which does not have a color listed, then the `[DefaultTunnel]`'s color will be used. Note that for every `[Tunnel]`, the `color` key must always come first, and only below that can the `system` keys be specified.
 
 ## Build instructions
-Build the project using the `NMAKE` tool from Microsoft Visual C++ 7.0 (VC7) + the VC6 runtime libraries (you may also need the D3D8 header files).
+Build the project using the `NMAKE` tool from Microsoft Visual C++ 7.0 (VC7) + the VC6 runtime libraries.
 This will output the `JumpTunnelColors.dll` file in the `bin` folder.
 Building the project using other compilers may require the code to be modified.
