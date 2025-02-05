@@ -15,6 +15,22 @@ struct FlColor
         b(ByteColorToFloat(bByte))
     {}
 
+    FlColor()
+        : r(0.0f),
+        g(0.0f),
+        b(0.0f)
+    {}
+
+    FlColor Mix(const FlColor &other)
+    {
+        FlColor result;
+        result.r = (r + other.r) / 2.0f;
+        result.g = (g + other.g) / 2.0f;
+        result.b = (b + other.b) / 2.0f;
+
+        return result;
+    }
+
     float r, g, b;
 };
 
@@ -33,15 +49,19 @@ inline GateTunnel* GetGateTunnel(PUINT jumpTunnelId)
     // FL generates a spew warning if the gate tunnel cannot be found, but in some cases this is inevitable for the current code setup.
     // Hence patch out the warning temporarily
     *((PWORD) GET_GATE_TUNNEL_NOT_FOUND) = 0x24EB;
-
-    #define GET_GATE_TUNNEL_ADDR 0x4FEDD0
-
-    typedef GateTunnel* GetGateTunnelFunc(PUINT);
-    GateTunnel* result = ((GetGateTunnelFunc*) GET_GATE_TUNNEL_ADDR)(jumpTunnelId);
+    GateTunnel* result = GetGateTunnel_Original(jumpTunnelId);
 
     *((PWORD) GET_GATE_TUNNEL_NOT_FOUND) = 0x02BE;
 
     return result;
+}
+
+GateTunnel* GetGateTunnel_Original(PUINT jumpTunnelId)
+{
+    #define GET_GATE_TUNNEL_ADDR 0x4FEDD0
+
+    typedef GateTunnel* GetGateTunnelFunc(PUINT);
+    return ((GetGateTunnelFunc*) GET_GATE_TUNNEL_ADDR)(jumpTunnelId);
 }
 
 struct Client

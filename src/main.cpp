@@ -3,58 +3,114 @@
 #include "Freelancer.h"
 #include <map>
 
+typedef enum ColorPrecedence
+{
+    COLOR_PRECEDENCE_ARCH,
+    COLOR_PRECEDENCE_SYS,
+    COLOR_PRECEDENCE_MIX_ARCH,
+    COLOR_PRECEDENCE_MIX_SYS,
+} ColorPrecedence;
+
 UINT gateTunnelBretoniaId;
-DWORD systemSwitchOutOg;
+UINT lastGateEnterArchId = NULL;
 bool switchColorsWhileJumping = true;
 
 FlColor defaultTunnel = DEFAULT_FL_COLOR;
-std::map<UINT, FlColor> tunnelMap;
+std::map<UINT, FlColor> sysTunnelMap;
+std::map<UINT, FlColor> archTunnelMap;
 
-void UpdateGateTunnel(UINT systemId)
+ColorPrecedence colorPrecedence = COLOR_PRECEDENCE_ARCH;
+
+FlColor* FindFlColor(std::map<UINT, FlColor> &tunnelMap, UINT key)
 {
-    static UINT lastSystemId = NULL;
+    if (key == NULL)
+        return NULL;
 
-    // If the system hasn't changed, then there's no point in changing the color.
-    if (systemId == lastSystemId)
-        return;
+    std::map<UINT, FlColor>::iterator it = tunnelMap.find(key);
 
-    GateTunnel* gateTunnel = GetGateTunnel(&gateTunnelBretoniaId);
+    if (it == tunnelMap.end())
+        return NULL;
 
-    // Also if the gate tunnel cannot be found, its color can't be changed either.
+    return &it->second;
+}
+
+// This hook gets called each time a player jumps to a different system using a jumpgate or jumphole.
+GateTunnel* GetGateTunnel_Custom(PUINT systemId, CSolar* enteredGate)
+{
+    GateTunnel* gateTunnel = GetGateTunnel_Original(systemId);
+
+    if (enteredGate)
+        lastGateEnterArchId = enteredGate->solarArch->solarArchId;
+
+    UpdateGateTunnel(gateTunnel);
+
+    return gateTunnel;
+}
+
+__declspec(naked) void GetGateTunnel_Hook()
+{
+    #define GET_GATE_TUNNEL_RET 0x503784
+
+    __asm {
+        push [esp+0x14] // CSolar (jumpgate/hole that has been docked with)
+        call GetGateTunnel_Custom
+        mov ecx, GET_GATE_TUNNEL_RET
+        jmp ecx
+    }
+}
+
+void UpdateGateTunnel(GateTunnel* gateTunnel)
+{
     if (!gateTunnel)
         return;
 
-    lastSystemId = systemId;
-    FlColor* systemTunnel = &defaultTunnel;
+    FlColor* sysColor = FindFlColor(sysTunnelMap, CURRENT_SYSTEM_ID);
+    FlColor* archColor = FindFlColor(archTunnelMap, lastGateEnterArchId);
 
-    std::map<UINT, FlColor>::iterator it = tunnelMap.find(systemId);
-
-    // Try to find the tunnel color associated with this system.
-    // If it can't be found, use the default color.
-    if (it != tunnelMap.end())
-        systemTunnel = &it->second;
-
-    // Set the color.
-    gateTunnel->jumptube5Color = *systemTunnel;
+    if (colorPrecedence == COLOR_PRECEDENCE_SYS)
+    {
+        if (sysColor)
+            gateTunnel->jumptube5Color = *sysColor;
+        else if (archColor)
+            gateTunnel->jumptube5Color = *archColor;
+        else
+            gateTunnel->jumptube5Color = defaultTunnel;
+    }
+    else if (colorPrecedence == COLOR_PRECEDENCE_ARCH)
+    {
+        if (archColor)
+            gateTunnel->jumptube5Color = *archColor;
+        else if (sysColor)
+            gateTunnel->jumptube5Color = *sysColor;
+        else
+            gateTunnel->jumptube5Color = defaultTunnel;
+    }
+    else if (colorPrecedence == COLOR_PRECEDENCE_MIX_ARCH || COLOR_PRECEDENCE_MIX_SYS)
+    {
+        if (sysColor && archColor)
+            gateTunnel->jumptube5Color = sysColor->Mix(*archColor);
+        else if (archColor && colorPrecedence == COLOR_PRECEDENCE_MIX_ARCH)
+            gateTunnel->jumptube5Color = *archColor;
+        else if (sysColor && colorPrecedence == COLOR_PRECEDENCE_MIX_SYS)
+            gateTunnel->jumptube5Color = *sysColor;
+        else if (archColor)
+            gateTunnel->jumptube5Color = *archColor;
+        else if (sysColor)
+            gateTunnel->jumptube5Color = *sysColor;
+        else
+            gateTunnel->jumptube5Color = defaultTunnel;
+    }
 }
 
 // This hook gets called each time FL changes the current system.
 Universe::ISystem const * get_system_Hook(UINT systemId)
 {
-    UpdateGateTunnel(systemId);
-
     // Call the original function.
-    return Universe::get_system(systemId);
-}
+    Universe::ISystem const * result = Universe::get_system(systemId);
 
-// This hook gets called each time a player jumps to a different system using a jumpgate or jumphole.
-void Client::SystemSwitchOut_Hook(DWORD unk1, DWORD unk2)
-{
-    UpdateGateTunnel(CURRENT_SYSTEM_ID);
+    UpdateGateTunnel(GetGateTunnel(&gateTunnelBretoniaId));
 
-    // Call the original function.
-    SystemSwitchOut initElementsFunc = GetFuncDef<SystemSwitchOut>(systemSwitchOutOg);
-    (this->*initElementsFunc)(unk1, unk2);
+    return result;
 }
 
 void ParseTunnelColors()
@@ -68,13 +124,18 @@ void ParseTunnelColors()
     while (reader.read_header())
     {
         // Colors in the ini files are passed as ints from 0 to 255, but in-memory the colors are float values from 0 to 1.
-        if (reader.is_header("DefaultTunnel"))
+        if (reader.is_header("Options"))
         {
             while (reader.read_value())
             {
-                if (reader.is_value("switch_colors_while_jumping"))
+                if (reader.is_value("switch_sys_colors_while_jumping"))
                 {
                     switchColorsWhileJumping = reader.get_value_bool(0);
+                }
+
+                if (reader.is_value("color_precedence"))
+                {
+                    colorPrecedence = (ColorPrecedence) reader.get_value_int(0);
                 }
 
                 if (reader.is_value("color"))
@@ -86,7 +147,7 @@ void ParseTunnelColors()
             }
         }
 
-        if (reader.is_header("Tunnel"))
+        if (reader.is_header("SysTunnel"))
         {
             while (reader.read_value())
             {
@@ -102,7 +163,28 @@ void ParseTunnelColors()
                     // Insert the color for the system.
                     // Hopefully the color has been set correctly.
                     UINT systemId = CreateID(reader.get_value_string(0));
-                    tunnelMap.insert(std::pair<UINT, FlColor>(systemId, tunnel));
+                    sysTunnelMap.insert(std::pair<UINT, FlColor>(systemId, tunnel));
+                }
+            }
+        }
+
+        if (reader.is_header("ArchTunnel"))
+        {
+            while (reader.read_value())
+            {
+                if (reader.is_value("color"))
+                {
+                    tunnel.r = ByteColorToFloat(reader.get_value_int(0));
+                    tunnel.g = ByteColorToFloat(reader.get_value_int(1));
+                    tunnel.b = ByteColorToFloat(reader.get_value_int(2));
+                }
+
+                if (reader.is_value("archetype"))
+                {
+                    // Insert the color for the archetype.
+                    // Hopefully the color has been set correctly.
+                    UINT archId = CreateID(reader.get_value_string(0));
+                    archTunnelMap.insert(std::pair<UINT, FlColor>(archId, tunnel));
                 }
             }
         }
@@ -113,6 +195,7 @@ void Init()
 {
     #define UPDATE_SYS_GETSYS_CALL_ADDR 0x4C484F
     #define SYSTEM_SWITCH_OUT_ADDR 0x5E6758
+    #define GET_GATE_TUNNEL_ADDR 0x50377F
 
     gateTunnelBretoniaId = CreateID("gate_tunnel_bretonia");
 
@@ -124,7 +207,9 @@ void Init()
 
     if (switchColorsWhileJumping)
         Hook(UPDATE_SYS_GETSYS_CALL_ADDR, get_system_Hook, 6);
-    systemSwitchOutOg = SetPointer(SYSTEM_SWITCH_OUT_ADDR, &Client::SystemSwitchOut_Hook);
+
+    Hook(GET_GATE_TUNNEL_ADDR, GetGateTunnel_Hook, 5, true);
+    Patch_BYTE(0x503786, 8);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
