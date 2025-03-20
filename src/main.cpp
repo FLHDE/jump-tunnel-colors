@@ -85,7 +85,7 @@ void UpdateGateTunnel(GateTunnel* gateTunnel)
         else
             gateTunnel->jumptube5Color = defaultTunnel;
     }
-    else if (colorPrecedence == COLOR_PRECEDENCE_MIX_ARCH || COLOR_PRECEDENCE_MIX_SYS)
+    else if (colorPrecedence == COLOR_PRECEDENCE_MIX_ARCH || colorPrecedence == COLOR_PRECEDENCE_MIX_SYS)
     {
         if (sysColor && archColor)
             gateTunnel->jumptube5Color = sysColor->Mix(*archColor);
