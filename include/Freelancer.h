@@ -28,7 +28,7 @@ struct GateTunnel
 #define CURRENT_SYSTEM_ID *((PUINT) 0x673354)
 #define GET_GATE_TUNNEL_NOT_FOUND 0x04FEDF6
 
-inline GateTunnel* GetGateTunnel(PUINT jumpTunnelId)
+inline GateTunnel* GetGateTunnel(UINT jumpTunnelId)
 {
     // FL generates a spew warning if the gate tunnel cannot be found, but in some cases this is inevitable for the current code setup.
     // Hence patch out the warning temporarily
@@ -37,7 +37,7 @@ inline GateTunnel* GetGateTunnel(PUINT jumpTunnelId)
     #define GET_GATE_TUNNEL_ADDR 0x4FEDD0
 
     typedef GateTunnel* GetGateTunnelFunc(PUINT);
-    GateTunnel* result = ((GetGateTunnelFunc*) GET_GATE_TUNNEL_ADDR)(jumpTunnelId);
+    GateTunnel* result = ((GetGateTunnelFunc*) GET_GATE_TUNNEL_ADDR)(&jumpTunnelId);
 
     *((PWORD) GET_GATE_TUNNEL_NOT_FOUND) = 0x02BE;
 

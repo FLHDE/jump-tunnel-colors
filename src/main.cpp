@@ -12,19 +12,12 @@ std::map<UINT, FlColor> tunnelMap;
 
 void UpdateGateTunnel(UINT systemId)
 {
-    static UINT lastSystemId = NULL;
+    GateTunnel* gateTunnel = GetGateTunnel(gateTunnelBretoniaId);
 
-    // If the system hasn't changed, then there's no point in changing the color.
-    if (systemId == lastSystemId)
-        return;
-
-    GateTunnel* gateTunnel = GetGateTunnel(&gateTunnelBretoniaId);
-
-    // Also if the gate tunnel cannot be found, its color can't be changed either.
+    // If the gate tunnel cannot be found, its color can't be changed either.
     if (!gateTunnel)
         return;
 
-    lastSystemId = systemId;
     FlColor* systemTunnel = &defaultTunnel;
 
     std::map<UINT, FlColor>::iterator it = tunnelMap.find(systemId);
@@ -57,6 +50,13 @@ void Client::SystemSwitchOut_Hook(DWORD unk1, DWORD unk2)
     (this->*initElementsFunc)(unk1, unk2);
 }
 
+void SetTunnelColor(FlColor& tunnel, INI_Reader& reader)
+{
+    tunnel.r = ByteColorToFloat(reader.get_value_int(0));
+    tunnel.g = ByteColorToFloat(reader.get_value_int(1));
+    tunnel.b = ByteColorToFloat(reader.get_value_int(2));
+}
+
 void ParseTunnelColors()
 {
     INI_Reader reader;
@@ -79,9 +79,7 @@ void ParseTunnelColors()
 
                 if (reader.is_value("color"))
                 {
-                    defaultTunnel.r = ByteColorToFloat(reader.get_value_int(0));
-                    defaultTunnel.g = ByteColorToFloat(reader.get_value_int(1));
-                    defaultTunnel.b = ByteColorToFloat(reader.get_value_int(2));
+                    SetTunnelColor(defaultTunnel, reader);
                 }
             }
         }
@@ -92,9 +90,7 @@ void ParseTunnelColors()
             {
                 if (reader.is_value("color"))
                 {
-                    tunnel.r = ByteColorToFloat(reader.get_value_int(0));
-                    tunnel.g = ByteColorToFloat(reader.get_value_int(1));
-                    tunnel.b = ByteColorToFloat(reader.get_value_int(2));
+                    SetTunnelColor(tunnel, reader);
                 }
 
                 if (reader.is_value("system"))
@@ -133,7 +129,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
     UNREFERENCED_PARAMETER(lpReserved);
 
     if (fdwReason == DLL_PROCESS_ATTACH)
+    {
+        DisableThreadLibraryCalls(hinstDLL);
         Init();
+    }
 
     return TRUE;
 }
