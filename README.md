@@ -13,8 +13,7 @@ switch_colors_while_jumping = true
 
 [Tunnel]
 color = 50, 255, 95
-system = Li01
-system = Li03
+system = Li01, Li03, Rh04
 system = Ku01
 
 [Tunnel]
@@ -23,7 +22,7 @@ system = Li02
 system = Iw03
 ```
 
-The `color` keys represent the red, green, and blue values ranging from 0 to 255 (integers). For every `[Tunnel]` entry, you can specify one or more systems by nickname. If you are in a jump tunnel within a system which does not have a color listed, then the `[DefaultTunnel]`'s color will be used. Note that for every `[Tunnel]`, the `color` key must always come first, and only below that can the `system` keys be specified.
+The `color` keys represent the red, green, and blue values ranging from 0 to 255 (integers). For every `[Tunnel]` entry, you can specify one or more systems by nickname (can be comma seperated in a single `system` key). If you are in a jump tunnel within a system which does not have a color listed, then the `[DefaultTunnel]`'s color will be used. Note that for every `[Tunnel]`, the `color` key must always come first, and only below that can the `system` keys be specified.
 
 ## Build instructions
 Build the project using the `NMAKE` tool from Microsoft Visual C++ 7.0 (VC7) + the VC6 runtime libraries.

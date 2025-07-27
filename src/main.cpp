@@ -95,10 +95,14 @@ void ParseTunnelColors()
 
                 if (reader.is_value("system"))
                 {
-                    // Insert the color for the system.
-                    // Hopefully the color has been set correctly.
-                    UINT systemId = CreateID(reader.get_value_string(0));
-                    tunnelMap.insert(std::pair<UINT, FlColor>(systemId, tunnel));
+                    UINT numParameters = reader.get_num_parameters();
+                    for (UINT i = 0; i < numParameters; ++i)
+                    {
+                        // Insert the color for the system.
+                        // Hopefully the color has been set correctly.
+                        UINT systemId = CreateID(reader.get_value_string(i));
+                        tunnelMap.insert(std::pair<UINT, FlColor>(systemId, tunnel));
+                    }
                 }
             }
         }

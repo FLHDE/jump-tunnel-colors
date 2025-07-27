@@ -27,6 +27,7 @@ public:
     bool get_value_bool(UINT index);
     int get_value_int(UINT index);
     LPCSTR get_value_string(UINT index);
+    UINT get_num_parameters() const;
     void close();
 
 private:
