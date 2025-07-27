@@ -9,6 +9,7 @@ typedef enum ColorPrecedence
     COLOR_PRECEDENCE_SYS,
     COLOR_PRECEDENCE_MIX_ARCH,
     COLOR_PRECEDENCE_MIX_SYS,
+    COLOR_PRECEDENCE_MIX_ALWAYS,
 } ColorPrecedence;
 
 UINT gateTunnelBretoniaId;
@@ -57,6 +58,17 @@ void UpdateGateTunnel(GateTunnel* gateTunnel)
             gateTunnel->jumptube5Color = *archColor;
         else if (sysColor)
             gateTunnel->jumptube5Color = *sysColor;
+        else
+            gateTunnel->jumptube5Color = defaultTunnel;
+    }
+    else if (colorPrecedence == COLOR_PRECEDENCE_MIX_ALWAYS)
+    {
+        if (sysColor && archColor)
+            gateTunnel->jumptube5Color = sysColor->Mix(*archColor);
+        else if (archColor)
+            gateTunnel->jumptube5Color = archColor->Mix(defaultTunnel);
+        else if (sysColor)
+            gateTunnel->jumptube5Color = sysColor->Mix(defaultTunnel);
         else
             gateTunnel->jumptube5Color = defaultTunnel;
     }
