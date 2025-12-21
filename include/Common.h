@@ -13,6 +13,21 @@ namespace Universe
     DllImport ISystem const * get_system(UINT id);
 }
 
+namespace Archetype
+{
+    struct Solar
+    {
+        BYTE x00[0x8];
+        UINT solarArchId;
+    };
+}
+
+struct CSolar
+{
+    BYTE x00[0x88];
+    Archetype::Solar* solarArch;
+};
+
 class DllImport INI_Reader
 {
 public:

@@ -7,22 +7,27 @@ Download the latest `JumpTunnelColors.dll` from [Releases](https://github.com/FL
 ## Usage instructions
 Create a file named `jump_tunnel_colors.ini` in `DATA/FX`. To this new file, add content with the following format:
 ```ini
-[DefaultTunnel]
-color = 255, 200, 100
-switch_colors_while_jumping = true
+[Options]
+switch_sys_colors_while_jumping = true
+color_precedence = 1
+default_color = 255, 200, 100
 
-[Tunnel]
+[SysTunnel]
 color = 50, 255, 95
 system = Li01, Li03, Rh04
 system = Ku01
 
-[Tunnel]
+[SysTunnel]
 color = 255, 30, 80
 system = Li02
 system = Iw03
+
+[ArchTunnel]
+color = 100, 0, 255
+archetype = jumphole_light, nomad_gate
 ```
 
-The `color` keys represent the red, green, and blue values ranging from 0 to 255 (integers). For every `[Tunnel]` entry, you can specify one or more systems by nickname (can be comma seperated in a single `system` key). If you are in a jump tunnel within a system which does not have a color listed, then the `[DefaultTunnel]`'s color will be used. Note that for every `[Tunnel]`, the `color` key must always come first, and only below that can the `system` keys be specified.
+The `color` keys represent the red, green, and blue values ranging from 0 to 255 (integers). For every `[SysTunnel]` entry, you can specify one or more systems by nickname (can be comma separated in a single `system` key). If you are in a jump tunnel within a system which does not have a color listed, then the `[DefaultTunnel]`'s color will be used. Note that for every `[Tunnel]`, the `color` key must always come first, and only below that can the `system` keys be specified.
 
 ## Build instructions
 Build the project using the `NMAKE` tool from Microsoft Visual C++ 7.0 (VC7) + the VC6 runtime libraries.
